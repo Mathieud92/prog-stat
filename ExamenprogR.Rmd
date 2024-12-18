@@ -1,0 +1,129 @@
+---
+title: "Programmation Statistique Examen"
+author: "Mathieu"
+date: "2024-12-18"
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+---
+
+# ***Programmation Statistique : Examen*** 
+```{r}
+a <- read.csv("/home/UCA/madusseaux/Programmation statistique/exam_data/ventes01-05-2024.csv")
+print(a)
+
+```
+```{r}
+lire_donnees_ventes <- function(repertoire, debut_date, fin_date) {
+  debut_date <- as.Date(debut_date, format = "%Y-%m-%d")
+  fin_date <- as.Date(fin_date, format = "%Y-%m-%d")
+  
+  fichiers <- list.files(repertoire, full.names = TRUE, pattern = "^ventes[0-9]{2}-[0-9]{2}-[0-9]{4}\\.csv$")
+  
+  dates_fichiers <- as.Date(
+    sub("^ventes([0-9]{2}-[0-9]{2}-[0-9]{4})\\.csv$", "\\1", basename(fichiers)),
+    format = "%d-%m-%Y"
+  )
+  
+  fichiers_valides <- fichiers[dates_fichiers >= debut_date & dates_fichiers <= fin_date]
+  
+  if (length(fichiers_valides) > 0) {
+    donnees_ventes <- do.call(rbind, lapply(fichiers_valides, read.csv))
+    return(donnees_ventes)
+  } else {
+    stop("Aucun fichier trouvé pour la plage de dates spécifiée.")
+  }
+}
+donnees <- lire_donnees_ventes(
+  repertoire = "/home/UCA/madusseaux/Programmation statistique/exam_data/",
+  debut_date = "2020-01-01",
+  fin_date = "2024-12-31"
+)
+
+print(donnees)
+```
+
+
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+
+visualiser_evolution_tendance <- function(donnees) {
+
+  donnees$date <- as.Date(donnees$date, format = "%Y-%m-%d")
+  
+
+  donnees$annee <- format(donnees$date, "%Y")
+  
+
+  ventes_par_annee <- donnees %>%
+    group_by(annee) %>%
+    summarise(ventes_totales = sum(nb_de_ventes, na.rm = TRUE))
+  
+  
+  mediane_ventes <- median(ventes_par_annee$ventes_totales, na.rm = TRUE)
+  
+  
+  graphique <- ggplot(ventes_par_annee, aes(x = as.numeric(annee), y = ventes_totales)) +
+    geom_line(color = "blue", size = 1.5) +  # Ligne des ventes annuelles
+    geom_point(color = "red", size = 3) +   # Points rouges pour chaque année
+    geom_hline(yintercept = mediane_ventes, linetype = "dashed", color = "darkgreen", size = 1) + 
+    geom_text(aes(label = ventes_totales), vjust = -0.5, size = 4, color = "black") + 
+    labs(
+      title = "Évolution des ventes annuelles du FXD JET 100 (2020-2024)",
+      x = "Année",
+      y = "Total des ventes",
+      subtitle = "Évolution des ventes avec médiane sans ligne de tendance",
+      caption = "Source: Données internes"
+    ) +
+    annotate("text", x = as.numeric(ventes_par_annee$annee[1]), y = mediane_ventes, 
+             label = paste("Médiane:", mediane_ventes), 
+             color = "darkgreen", vjust = -0.5, hjust = 0.5) +  
+    theme_minimal(base_size = 14) +  
+    theme(
+      plot.title = element_text(face = "bold", size = 16), 
+      axis.text.x = element_text(angle = 45, hjust = 1)   
+    )
+  
+  # Afficher le graphique
+  print(graphique)
+}
+
+# Appeler la fonction
+visualiser_evolution_tendance(donnees)
+
+
+```
+
+
+```{r}
+library(ggplot2)
+
+visualiser_fluctuation_ventes <- function(donnees) {
+  donnees$date <- as.Date(donnees$date, format = "%Y-%m-%d")
+  
+
+  graphique <- ggplot(donnees, aes(x = date, y = nb_de_ventes)) +
+    geom_line(color = "blue", size = 1) +  
+    labs(
+      title = "Fluctuation des ventes du FXD JET 100 (2020-2024)",
+      x = "Date",
+      y = "Nombre de ventes",
+      subtitle = "Fluctuation des ventes quotidiennes entre 2020 et 2024",
+      caption = "Source: Données internes"
+    ) +
+    theme_minimal(base_size = 14) +  
+    theme(
+      plot.title = element_text(face = "bold", size = 16),  
+      axis.text.x = element_text(angle = 45, hjust = 1)   
+    )
+  
+  print(graphique)
+}
+
+visualiser_fluctuation_ventes(donnees)
+
+```
