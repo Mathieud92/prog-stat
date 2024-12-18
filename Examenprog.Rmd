@@ -1,0 +1,78 @@
+---
+title: "Programmation Statistique Examen"
+author: "Mathieu"
+date: "2024-12-18"
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+---
+
+# ***Programmation Statistique : Examen*** 
+```{r}
+a <- read.csv("/home/UCA/madusseaux/Programmation statistique/exam_data/ventes01-05-2024.csv")
+print(a)
+
+```
+```{r}
+lire_donnees_ventes <- function(repertoire, debut_date, fin_date) {
+  debut_date <- as.Date(debut_date, format = "%Y-%m-%d")
+  fin_date <- as.Date(fin_date, format = "%Y-%m-%d")
+  
+  fichiers <- list.files(repertoire, full.names = TRUE, pattern = "^ventes[0-9]{2}-[0-9]{2}-[0-9]{4}\\.csv$")
+  
+  dates_fichiers <- as.Date(
+    sub("^ventes([0-9]{2}-[0-9]{2}-[0-9]{4})\\.csv$", "\\1", basename(fichiers)),
+    format = "%d-%m-%Y"
+  )
+  
+  fichiers_valides <- fichiers[dates_fichiers >= debut_date & dates_fichiers <= fin_date]
+  
+  if (length(fichiers_valides) > 0) {
+    donnees_ventes <- do.call(rbind, lapply(fichiers_valides, read.csv))
+    return(donnees_ventes)
+  } else {
+    stop("Aucun fichier trouvé pour la plage de dates spécifiée.")
+  }
+}
+donnees <- lire_donnees_ventes(
+  repertoire = "/home/UCA/madusseaux/Programmation statistique/exam_data/",
+  debut_date = "2020-01-01",
+  fin_date = "2024-12-31"
+)
+
+print(donnees)
+```
+
+
+
+```{r}
+library(ggplot2)
+
+
+visualiser_evolution_ventes_simple <- function(donnees) {
+
+  donnees$date <- as.Date(donnees$date, format = "%Y-%m-%d")
+  
+  donnees$annee <- format(donnees$date, "%Y")
+  
+  ventes_par_annee <- aggregate(nb_de_ventes ~ annee, data = donnees, sum)
+  
+  graphique <- ggplot(ventes_par_annee, aes(x = annee, y = nb_de_ventes)) +
+    geom_bar(stat = "identity", fill = "steelblue") +  
+    labs(
+      title = "Évolution des ventes annuelles (2020-2024)",
+      x = "Année",
+      y = "Total des ventes",
+      subtitle = "Histogramme montrant les ventes totales par année",
+      caption = "Source: Données internes"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  print(graphique)
+}
+
+visualiser_evolution_ventes_simple(donnees)
+```
